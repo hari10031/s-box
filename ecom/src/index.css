@@ -1,0 +1,192 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-serif: 'Playfair Display', Georgia, 'Times New Roman', serif;
+  --font-mono: 'DM Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  --color-brand-50: #f5e9e4;
+  --color-brand-100: #efd9cf;
+  --color-brand-200: #e7c2b2;
+  --color-brand-300: #e0ab95;
+  --color-brand-400: #dc8b68;
+  --color-brand-500: #d85a30;
+  --color-brand-600: #d85a30;
+  --color-brand-700: #ba4e2a;
+  --color-brand-800: #9a4224;
+  --color-brand-900: #7a351d;
+  --color-rose-50: #f9efeb;
+  --color-surface: #f5f4f0;
+  --color-surface-card: #ffffff;
+  --color-surface-muted: #f5f4f0;
+  --color-text-primary: #1a1916;
+  --color-text-secondary: #4c4a45;
+  --color-text-muted: #888780;
+  --color-border: #e0ded8;
+  --color-border-hover: #e0ded8;
+}
+
+body {
+  font-family: var(--font-sans);
+  background-color: var(--color-surface);
+  color: var(--color-text-primary);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--color-border); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--color-border-hover); }
+
+/* Utilities */
+.font-serif { font-family: var(--font-serif); }
+.font-mono { font-family: var(--font-mono); }
+
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0 1.25rem;
+  border: none;
+  border-radius: 0;
+  background: #1a1916;
+  color: #fff;
+  height: 52px;
+  font-weight: 500;
+  font-size: 0.875rem;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  transition: transform 200ms ease, opacity 150ms ease;
+}
+.btn-primary:hover {
+  transform: translateY(-2px);
+}
+.btn-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.btn-outline {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0 1rem;
+  height: 44px;
+  border: 0.5px solid var(--color-border);
+  border-radius: 0;
+  background: transparent;
+  color: var(--color-text-primary);
+  font-weight: 400;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: transform 200ms ease, opacity 150ms ease;
+}
+.btn-outline:hover {
+  transform: translateY(-1px);
+}
+
+.card {
+  background: var(--color-surface-card);
+  border: 0.5px solid var(--color-border);
+  border-radius: 12px;
+  overflow: hidden;
+  transition: transform 200ms ease, opacity 150ms ease;
+}
+
+.input-field {
+  width: 100%;
+  height: 2.75rem;
+  padding: 0 1rem;
+  background: var(--color-surface-card);
+  border: 0.5px solid var(--color-border);
+  border-radius: 12px;
+  color: var(--color-text-primary);
+  font-size: 0.875rem;
+  transition: all 0.2s ease;
+  outline: none;
+}
+.input-field::placeholder {
+  color: var(--color-text-muted);
+}
+.input-field:focus {
+  border-color: var(--color-brand-500);
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.section-heading {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-weight: 400;
+  color: var(--color-text-muted);
+  padding-bottom: 8px;
+  border-bottom: 0.5px solid var(--color-border);
+}
+
+.nav-link {
+  position: relative;
+  padding-bottom: 4px;
+}
+
+.nav-link::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 100%;
+  height: 0.5px;
+  background: var(--color-text-primary);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 200ms ease;
+}
+
+.nav-link:hover::after,
+.nav-link.active::after {
+  transform: scaleX(1);
+}
+
+.input-underline {
+  width: 100%;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--color-border);
+  height: 44px;
+  outline: none;
+  font-size: 14px;
+  color: var(--color-text-primary);
+  transition: border-color 200ms ease;
+}
+
+.input-underline:focus {
+  border-bottom-color: var(--color-brand-500);
+}
+
+.input-underline::placeholder {
+  color: var(--color-text-muted);
+}
+
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-up {
+  animation: fade-up 0.5s ease forwards;
+}
