@@ -8,17 +8,30 @@ import requireRole from '../middleware/requireRole.js';
 import injectAdminRef from '../middleware/injectAdminRef.js';
 import scopeQuery from '../middleware/scopeQuery.js';
 import { uploadImage, deleteImage } from '../utils/cloudinary.js';
+import { buildSareeImagePrompt, generateImageFromReference } from '../utils/aiImage.js';
 import { expandListImage, expandDetailImages } from '../utils/imageUrl.js';
 
 const router = Router();
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } });
 router.use(verifyToken);
 
+const parseBool = (value, defaultValue = true) => {
+  if (value === undefined || value === null || value === '') return defaultValue;
+  if (typeof value === 'boolean') return value;
+  const normalized = `${value}`.toLowerCase();
+  if (['true', '1', 'yes', 'y', 'on'].includes(normalized)) return true;
+  if (['false', '0', 'no', 'n', 'off'].includes(normalized)) return false;
+  return defaultValue;
+};
+
+const shouldUseAiImage = (req) => parseBool(req.body.useAiImage, true);
+
 // POST /sarees — create saree with quota check
 router.post('/', requireRole(['admin']), upload.array('images', 8), injectAdminRef, async (req, res, next) => {
   try {
-    const { name, description, price, discount, category, tags } = req.body;
+    const { name, description, price, discount, category, tags, aiPrompt } = req.body;
     if (!name || price == null) return res.status(400).json({ error: 'Name and price required' });
+    const parsedTags = typeof tags === 'string' ? JSON.parse(tags) : (tags || []);
 
     const imageCount = req.files?.length ?? 0;
     let publicIds = [];
@@ -30,17 +43,29 @@ router.post('/', requireRole(['admin']), upload.array('images', 8), injectAdminR
       }
       for (const file of req.files) {
         try {
-          const result = await uploadImage(file.buffer, `sarees/${req.user._id}`);
+          const bufferToUpload = shouldUseAiImage(req)
+            ? await generateImageFromReference({
+              buffer: file.buffer,
+              mimeType: file.mimetype,
+              prompt: buildSareeImagePrompt({
+                systemPrompt: process.env.AI_IMAGE_SYSTEM_PROMPT,
+                aiPrompt,
+                name,
+                description,
+                tags: parsedTags,
+              }),
+            })
+            : file.buffer;
+          const result = await uploadImage(bufferToUpload, `sarees/${req.user._id}`);
           publicIds.push(result.public_id);
-        } catch {
-          for (const pid of publicIds) await deleteImage(pid).catch(() => {});
-          return res.status(500).json({ error: 'Image upload failed' });
+        } catch (err) {
+          for (const pid of publicIds) await deleteImage(pid).catch(() => { });
+          return res.status(err.statusCode || 500).json({ error: err.message || 'Image upload failed' });
         }
       }
       await User.findByIdAndUpdate(req.user._id, { $inc: { imageUploadCount: imageCount } });
     }
 
-    const parsedTags = typeof tags === 'string' ? JSON.parse(tags) : (tags || []);
     const saree = await Saree.create({
       name, description: description || '', price: +price, discount: +(discount || 0),
       images: publicIds, category: category || null, tags: parsedTags, adminRef: req.body.adminRef,
@@ -96,7 +121,7 @@ router.patch('/:id', requireRole(['admin']), upload.array('newImages', 8), injec
     const saree = await Saree.findOne({ _id: req.params.id, ...req.storeFilter });
     if (!saree) return res.status(404).json({ error: 'Saree not found' });
 
-    const { name, description, price, discount, category, tags, stockStatus, removeImages } = req.body;
+    const { name, description, price, discount, category, tags, stockStatus, removeImages, aiPrompt } = req.body;
     if (name) saree.name = name;
     if (description !== undefined) saree.description = description;
     if (price != null) saree.price = +price;
@@ -107,7 +132,7 @@ router.patch('/:id', requireRole(['admin']), upload.array('newImages', 8), injec
 
     if (removeImages) {
       const toRemove = typeof removeImages === 'string' ? JSON.parse(removeImages) : removeImages;
-      for (const pid of toRemove) await deleteImage(pid).catch(() => {});
+      for (const pid of toRemove) await deleteImage(pid).catch(() => { });
       saree.images = saree.images.filter(img => !toRemove.includes(img));
       await User.findByIdAndUpdate(req.user._id, { $inc: { imageUploadCount: -toRemove.length } });
     }
@@ -116,7 +141,20 @@ router.patch('/:id', requireRole(['admin']), upload.array('newImages', 8), injec
       const me = await User.findById(req.user._id);
       if (me.imageUploadCount + req.files.length > me.imageUploadLimit) return res.status(403).json({ error: 'Image upload limit reached' });
       for (const file of req.files) {
-        const result = await uploadImage(file.buffer, `sarees/${req.user._id}`);
+        const bufferToUpload = shouldUseAiImage(req)
+          ? await generateImageFromReference({
+            buffer: file.buffer,
+            mimeType: file.mimetype,
+            prompt: buildSareeImagePrompt({
+              systemPrompt: process.env.AI_IMAGE_SYSTEM_PROMPT,
+              aiPrompt,
+              name: saree.name,
+              description: saree.description,
+              tags: saree.tags,
+            }),
+          })
+          : file.buffer;
+        const result = await uploadImage(bufferToUpload, `sarees/${req.user._id}`);
         saree.images.push(result.public_id);
       }
       await User.findByIdAndUpdate(req.user._id, { $inc: { imageUploadCount: req.files.length } });
@@ -132,7 +170,7 @@ router.delete('/:id', requireRole(['admin']), scopeQuery, async (req, res, next)
   try {
     const saree = await Saree.findOne({ _id: req.params.id, ...req.storeFilter });
     if (!saree) return res.status(404).json({ error: 'Saree not found' });
-    for (const pid of saree.images) await deleteImage(pid).catch(() => {});
+    for (const pid of saree.images) await deleteImage(pid).catch(() => { });
     await User.findByIdAndUpdate(req.user._id, { $inc: { imageUploadCount: -saree.images.length } });
     await Saree.deleteOne({ _id: saree._id });
     res.json({ message: 'Saree deleted' });

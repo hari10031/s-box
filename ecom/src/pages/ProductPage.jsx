@@ -63,6 +63,9 @@ export default function ProductPage() {
         {/* Gallery */}
         <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.5 }}>
           <ImageGallery images={saree.imageUrls || []} />
+          <p className="text-[11px] font-mono uppercase tracking-wider text-[var(--color-text-muted)] mt-3">
+            AI-enhanced image generated from uploaded reference
+          </p>
         </motion.div>
 
         {/* Details */}
