@@ -24,6 +24,7 @@ import User from './models/User.js';
 
 const app = express();
 const server = http.createServer(app);
+const trustProxy = process.env.TRUST_PROXY === '1';
 
 const parseOrigins = (value) => (value || '')
   .split(',')
@@ -41,6 +42,7 @@ const allowedOrigins = Array.from(new Set([
 initSocket(server);
 
 // Middleware
+app.set('trust proxy', trustProxy ? 1 : false);
 app.use(helmet());
 app.use(cors({ origin: allowedOrigins, credentials: true }));
 app.use(express.json({ limit: '10mb' }));
