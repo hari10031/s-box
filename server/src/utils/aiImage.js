@@ -51,9 +51,22 @@ const extractImageBase64 = (payload) => {
   return null;
 };
 
-export const generateImageFromReference = async ({ buffer, mimeType = 'image/jpeg', prompt }) => {
+export const generateImageFromReferences = async ({ references, prompt }) => {
+  if (!Array.isArray(references) || references.length === 0) {
+    const err = new Error('At least one reference image is required');
+    err.statusCode = 400;
+    throw err;
+  }
+
   const apiKey = getGeminiApiKey();
   const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(AI_IMAGE_MODEL)}:generateContent?key=${encodeURIComponent(apiKey)}`;
+
+  const referenceParts = references.map(({ buffer, mimeType }) => ({
+    inlineData: {
+      mimeType: mimeType || 'image/jpeg',
+      data: buffer.toString('base64'),
+    },
+  }));
 
   const response = await fetch(endpoint, {
     method: 'POST',
@@ -62,12 +75,7 @@ export const generateImageFromReference = async ({ buffer, mimeType = 'image/jpe
       contents: [{
         parts: [
           { text: prompt },
-          {
-            inlineData: {
-              mimeType,
-              data: buffer.toString('base64'),
-            },
-          },
+          ...referenceParts,
         ],
       }],
       generationConfig: {
@@ -92,4 +100,10 @@ export const generateImageFromReference = async ({ buffer, mimeType = 'image/jpe
   }
   return Buffer.from(imageB64, 'base64');
 };
+
+export const generateImageFromReference = async ({ buffer, mimeType = 'image/jpeg', prompt }) =>
+  generateImageFromReferences({
+    references: [{ buffer, mimeType }],
+    prompt,
+  });
 
