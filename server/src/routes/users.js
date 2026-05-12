@@ -11,6 +11,11 @@ import { emitEmployeePending } from '../utils/socket.js';
 const router = Router();
 router.use(verifyToken);
 
+const normalizeText = (value) => (value || '').toString().trim();
+const normalizeUsername = (value) => normalizeText(value).toLowerCase();
+const normalizeEmail = (value) => normalizeText(value).toLowerCase();
+const buildFallbackEmail = (username, role) => `${username}@${role}.local`;
+
 // ── Super Admin ──────────────────────────────────
 
 // GET /users — list all admins
@@ -52,10 +57,19 @@ router.post('/admin', requireRole(['super_admin']), async (req, res, next) => {
   try {
     const { name, username, password, contact, imageUploadLimit, email } = req.body;
     if (!name || !username || !password) return res.status(400).json({ error: 'Name, username, and password are required' });
+    const normalizedUsername = normalizeUsername(username);
+    const normalizedEmail = normalizeEmail(email);
+    if (!normalizedUsername) return res.status(400).json({ error: 'Username is required' });
+    const existing = await User.findOne({ username: normalizedUsername });
+    if (existing) return res.status(409).json({ error: 'Username already taken' });
+    if (normalizedEmail) {
+      const existingEmail = await User.findOne({ email: normalizedEmail });
+      if (existingEmail) return res.status(409).json({ error: 'Email already taken' });
+    }
     const storeCode = `STORE-${Date.now().toString(36).toUpperCase()}`;
     const admin = await User.create({
-      name, username, password, role: 'admin', status: 'active',
-      contact: contact || '', email: email || '', imageUploadLimit: imageUploadLimit || 500,
+      name, username: normalizedUsername, password, role: 'admin', status: 'active',
+      contact: contact || '', email: normalizedEmail || buildFallbackEmail(normalizedUsername, 'admin'), imageUploadLimit: imageUploadLimit || 500,
       imageUploadCount: 0, storeCode, createdBy: req.user._id,
     });
     res.status(201).json(admin);
@@ -89,11 +103,21 @@ router.patch('/:id/ban', requireRole(['super_admin']), async (req, res, next) =>
 // POST /users/employee — create employee directly
 router.post('/employee', requireRole(['admin']), injectAdminRef, async (req, res, next) => {
   try {
-    const { name, username, password, contact } = req.body;
+    const { name, username, password, contact, email } = req.body;
     if (!name || !username || !password) return res.status(400).json({ error: 'Name, username, and password are required' });
+    const normalizedUsername = normalizeUsername(username);
+    const normalizedEmail = normalizeEmail(email);
+    if (!normalizedUsername) return res.status(400).json({ error: 'Username is required' });
+    const existing = await User.findOne({ username: normalizedUsername });
+    if (existing) return res.status(409).json({ error: 'Username already taken' });
+    if (normalizedEmail) {
+      const existingEmail = await User.findOne({ email: normalizedEmail });
+      if (existingEmail) return res.status(409).json({ error: 'Email already taken' });
+    }
     const employee = await User.create({
-      name, username, password, role: 'employee', status: 'active',
+      name, username: normalizedUsername, password, role: 'employee', status: 'active',
       adminRef: req.body.adminRef, createdBy: req.user._id, contact: contact || '',
+      email: normalizedEmail || buildFallbackEmail(normalizedUsername, 'employee'),
     });
     res.status(201).json(employee);
   } catch (err) { next(err); }
@@ -102,11 +126,29 @@ router.post('/employee', requireRole(['admin']), injectAdminRef, async (req, res
 // POST /users/employee/register — employee self-registration (no auth)
 router.post('/employee/register', async (req, res, next) => {
   try {
-    const { name, username, password, storeCode, contact } = req.body;
+    const { name, username, password, storeCode, contact, email } = req.body;
     if (!name || !username || !password || !storeCode) return res.status(400).json({ error: 'Name, username, password, and storeCode are required' });
+    const normalizedUsername = normalizeUsername(username);
+    const normalizedEmail = normalizeEmail(email);
+    if (!normalizedUsername) return res.status(400).json({ error: 'Username is required' });
+    const existing = await User.findOne({ username: normalizedUsername });
+    if (existing) return res.status(409).json({ error: 'Username already taken' });
+    if (normalizedEmail) {
+      const existingEmail = await User.findOne({ email: normalizedEmail });
+      if (existingEmail) return res.status(409).json({ error: 'Email already taken' });
+    }
     const admin = await User.findOne({ role: 'admin', storeCode, status: 'active' });
     if (!admin) return res.status(404).json({ error: 'Invalid store code' });
-    const employee = await User.create({ name, username, password, role: 'employee', status: 'pending', adminRef: admin._id, contact: contact || '' });
+    const employee = await User.create({
+      name,
+      username: normalizedUsername,
+      password,
+      role: 'employee',
+      status: 'pending',
+      adminRef: admin._id,
+      contact: contact || '',
+      email: normalizedEmail || buildFallbackEmail(normalizedUsername, 'employee'),
+    });
     await Notification.create({ userId: admin._id, title: 'New Employee Registration', body: `${name} has requested to join your store.`, type: 'employee_pending' });
     emitEmployeePending(admin._id.toString(), employee.toJSON());
     res.status(201).json({ message: 'Registration submitted. Waiting for admin approval.', employee: employee.toJSON() });
@@ -148,11 +190,21 @@ router.patch('/:id/approve', requireRole(['admin']), scopeQuery, async (req, res
 // POST /users/customer — create customer
 router.post('/customer', requireRole(['admin', 'employee']), injectAdminRef, async (req, res, next) => {
   try {
-    const { name, username, password, contact } = req.body;
+    const { name, username, password, contact, email } = req.body;
     if (!name || !username || !password) return res.status(400).json({ error: 'Name, username, and password are required' });
+    const normalizedUsername = normalizeUsername(username);
+    const normalizedEmail = normalizeEmail(email);
+    if (!normalizedUsername) return res.status(400).json({ error: 'Username is required' });
+    const existing = await User.findOne({ username: normalizedUsername });
+    if (existing) return res.status(409).json({ error: 'Username already taken' });
+    if (normalizedEmail) {
+      const existingEmail = await User.findOne({ email: normalizedEmail });
+      if (existingEmail) return res.status(409).json({ error: 'Email already taken' });
+    }
     const customer = await User.create({
-      name, username, password, role: 'customer', status: 'active',
+      name, username: normalizedUsername, password, role: 'customer', status: 'active',
       adminRef: req.body.adminRef, createdBy: req.user._id, contact: contact || '',
+      email: normalizedEmail || buildFallbackEmail(normalizedUsername, 'customer'),
     });
     res.status(201).json(customer);
   } catch (err) { next(err); }
