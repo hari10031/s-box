@@ -207,6 +207,8 @@ Identify: Anarkali · Lehenga Choli · Gown · Maxi · Kurti · Gharara · Shara
 - Wedding guest → elegant styling, refined jewelry
 - Formal / Bridal → opulent styling, statement jewelry, intricate details
 
+
+
 8. Occasion Context (auto-select)
 - Day wear → natural lighting, garden or urban background
 - Evening wear → warm golden lighting, interior or festive background
