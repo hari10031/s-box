@@ -21,7 +21,7 @@ router.get('/', async (req, res, next) => {
 });
 
 // POST /categories
-router.post('/', requireRole(['admin']), async (req, res, next) => {
+router.post('/', requireRole(['admin', 'employee']), async (req, res, next) => {
   try {
     const { name, fabric, occasion, region, priceTier } = req.body;
     if (!name) return res.status(400).json({ error: 'Category name required' });

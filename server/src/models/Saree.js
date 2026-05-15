@@ -10,6 +10,7 @@ const sareeSchema = new mongoose.Schema(
     category: { type: mongoose.Schema.Types.ObjectId, ref: 'Category', default: null },
     tags: { type: [String], default: [] },
     stockStatus: { type: String, enum: ['available', 'sold'], default: 'available' },
+    garmentType: { type: String, enum: ['saree', 'dress'], default: 'saree' },
     adminRef: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
   },
   { timestamps: true }
