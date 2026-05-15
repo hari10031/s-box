@@ -35,6 +35,7 @@ export default function ProductCard({ saree }) {
             </div>
           )}
           {saree.category?.name && <span className="absolute top-3 left-3 badge bg-white text-[var(--color-text-primary)]">{saree.category.name}</span>}
+          {saree.garmentType && <span className="absolute top-12 left-3 badge bg-[var(--color-brand-500)] text-white text-xs font-medium">{saree.garmentType.charAt(0).toUpperCase() + saree.garmentType.slice(1)}</span>}
           <button className="absolute top-3 right-3 w-8 h-8 flex items-center justify-center bg-white/95 border border-[var(--color-border)] opacity-0 group-hover:opacity-100 transition-opacity duration-150 cursor-pointer">
             <Heart size={14} />
           </button>

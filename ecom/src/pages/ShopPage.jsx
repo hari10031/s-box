@@ -17,6 +17,7 @@ export default function ShopPage() {
 
   const [search, setSearch] = useState(searchParams.get('search') || '');
   const [category, setCategory] = useState(searchParams.get('category') || '');
+  const [garmentType, setGarmentType] = useState(searchParams.get('garmentType') || '');
   const [minPrice, setMinPrice] = useState(searchParams.get('minPrice') || '');
   const [maxPrice, setMaxPrice] = useState(searchParams.get('maxPrice') || '');
   const [sort, setSort] = useState('newest');
@@ -30,6 +31,7 @@ export default function ShopPage() {
     const params = { page, limit: 20, sort };
     if (search) params.search = search;
     if (category) params.category = category;
+    if (garmentType) params.garmentType = garmentType;
     if (minPrice) params.minPrice = minPrice;
     if (maxPrice) params.maxPrice = maxPrice;
 
@@ -38,7 +40,7 @@ export default function ShopPage() {
       setTotal(r.data.total || 0);
       setTotalPages(r.data.totalPages || 1);
     }).catch(console.error).finally(() => setLoading(false));
-  }, [page, search, category, sort, minPrice, maxPrice]);
+  }, [page, search, category, garmentType, sort, minPrice, maxPrice]);
 
   const handleSearch = (e) => {
     e.preventDefault();
@@ -55,6 +57,7 @@ export default function ShopPage() {
   const clearFilters = () => {
     setSearch('');
     setCategory('');
+    setGarmentType('');
     setMinPrice('');
     setMaxPrice('');
     setSort('newest');
@@ -66,8 +69,8 @@ export default function ShopPage() {
     <div className="max-w-[1280px] mx-auto px-4 md:px-10 py-10 md:py-16">
       {/* Header */}
       <div className="mb-8 md:mb-12">
-        <h1 className="text-4xl md:text-5xl italic font-serif text-[var(--color-text-primary)]">Shop Sarees</h1>
-        <p className="text-sm text-[var(--color-text-secondary)] mt-1">{total} sarees available</p>
+        <h1 className="text-4xl md:text-5xl italic font-serif text-[var(--color-text-primary)]">Shop</h1>
+        <p className="text-sm text-[var(--color-text-secondary)] mt-1">{total} items available</p>
       </div>
 
       {/* Search & Filter Bar */}
@@ -99,11 +102,33 @@ export default function ShopPage() {
           <div className="sticky top-24">
             <div className="flex items-center justify-between mb-4">
               <h3 className="section-heading flex-1">Filters</h3>
-              {(search || category || minPrice || maxPrice) && (
+              {(search || category || minPrice || maxPrice || garmentType) && (
                 <button onClick={clearFilters} className="text-xs text-[var(--color-brand-500)] cursor-pointer border-none bg-transparent hover:underline flex items-center gap-1 ml-2">
                   <X size={12} /> Clear
                 </button>
               )}
+            </div>
+            <div className="py-4 border-b border-[0.5px] border-[var(--color-border)]">
+              <p className="text-[12px] text-[var(--color-text-muted)] mb-2">Garment Type</p>
+              <div className="flex flex-col gap-2">
+                <button
+                  onClick={() => { setGarmentType(''); setPage(1); }}
+                  className="text-left text-[13px] transition-all cursor-pointer border-none bg-transparent text-[var(--color-text-primary)] flex items-center gap-2"
+                >
+                  <span className={`w-[14px] h-[14px] border border-[var(--color-border)] ${!garmentType ? 'bg-[var(--color-text-primary)]' : ''}`} />
+                  All
+                </button>
+                {['saree', 'dress'].map((type) => (
+                  <button
+                    key={type}
+                    onClick={() => { setGarmentType(type); setPage(1); }}
+                    className="text-left text-[13px] transition-all cursor-pointer border-none bg-transparent text-[var(--color-text-primary)] flex items-center gap-2"
+                  >
+                    <span className={`w-[14px] h-[14px] border border-[var(--color-border)] ${garmentType === type ? 'bg-[var(--color-text-primary)]' : ''}`} />
+                    {type.charAt(0).toUpperCase() + type.slice(1)}
+                  </button>
+                ))}
+              </div>
             </div>
             <div className="py-4 border-b border-[0.5px] border-[var(--color-border)]">
               <p className="text-[12px] text-[var(--color-text-muted)] mb-2">Price range</p>
