@@ -223,8 +223,8 @@ export default function ShopPage() {
                       key={p}
                       onClick={() => { setPage(p); window.scrollTo(0, 0); }}
                       className={`w-10 h-10 rounded-xl text-sm font-medium cursor-pointer border transition-all ${p === page
-                          ? 'bg-[var(--color-brand-500)] text-white border-[var(--color-brand-500)]'
-                          : 'bg-transparent text-[var(--color-text-secondary)] border-[var(--color-border)] hover:border-[var(--color-brand-500)]'
+                        ? 'bg-[var(--color-brand-500)] text-white border-[var(--color-brand-500)]'
+                        : 'bg-transparent text-[var(--color-text-secondary)] border-[var(--color-border)] hover:border-[var(--color-brand-500)]'
                         }`}
                     >
                       {p}
