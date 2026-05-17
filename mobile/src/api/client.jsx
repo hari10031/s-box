@@ -22,7 +22,6 @@ const BASE_URL = BASE_URL_CANDIDATES[0];
 const api = axios.create({
   baseURL: BASE_URL,
   timeout: 0,
-  headers: { 'Content-Type': 'application/json' },
 });
 
 // Request interceptor — attach access token
@@ -92,5 +91,8 @@ api.interceptors.response.use(
 );
 
 export default api;
-export { BASE_URL };
+export { BASE_URL, BASE_URL_CANDIDATES };
 export const getActiveBaseUrl = () => api.defaults.baseURL;
+export const setActiveBaseUrl = (baseUrl) => {
+  api.defaults.baseURL = baseUrl;
+};

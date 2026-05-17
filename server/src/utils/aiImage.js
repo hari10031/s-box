@@ -300,12 +300,13 @@ const getGeminiApiKey = () => {
 };
 
 export const buildImagePrompt = ({ systemPrompt, aiPrompt, name, description, tags, garmentType = 'saree' }) => {
-  let base = sanitize(systemPrompt);
-  if (!base) {
-    base = garmentType === 'dress' ? DRESS_SYSTEM_PROMPT : SAREE_SYSTEM_PROMPT;
-  }
+  const isDress = garmentType === 'dress';
+  const base = isDress
+    ? sanitize(process.env.AI_DRESS_IMAGE_SYSTEM_PROMPT) || DRESS_SYSTEM_PROMPT
+    : sanitize(systemPrompt) || SAREE_SYSTEM_PROMPT;
+
   const parts = [
-    `Product name: ${sanitize(name) || (garmentType === 'dress' ? 'Dress' : 'Saree')}`,
+    `Product name: ${sanitize(name) || (isDress ? 'Dress' : 'Saree')}`,
     `Description: ${sanitize(description) || 'N/A'}`,
     `Tags: ${Array.isArray(tags) ? tags.join(', ') : sanitize(tags) || 'N/A'}`,
   ];

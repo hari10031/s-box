@@ -7,10 +7,27 @@ import * as ImagePicker from 'expo-image-picker';
 import { Ionicons } from '@expo/vector-icons';
 import FormInput from '../../components/FormInput';
 import Button from '../../components/Button';
+import ZoomableImageModal from '../../components/ZoomableImageModal';
 import { createSaree, generateSareeImage, updateSaree } from '../../api/sarees';
 import { getCategories } from '../../api/categories';
 import colors from '../../theme/colors';
 import { borderRadius } from '../../theme/spacing';
+
+const getGeneratedImageUrl = (saree) =>
+  saree?.imageUrls?.[0]?.detail || saree?.coverImage?.detail || saree?.coverImage?.list || null;
+
+const getImageUploadPart = (img, index) => {
+  const uri = img.uri;
+  const uriExtension = uri?.split('?')[0]?.split('.').pop()?.toLowerCase();
+  const safeExtension = ['jpg', 'jpeg', 'png', 'webp'].includes(uriExtension) ? uriExtension : 'jpg';
+  const type = img.mimeType || (safeExtension === 'png' ? 'image/png' : safeExtension === 'webp' ? 'image/webp' : 'image/jpeg');
+
+  return {
+    uri,
+    name: img.fileName || `reference_${index}.${safeExtension}`,
+    type,
+  };
+};
 
 export default function AddEditSareeScreen({ navigation, route }) {
   const editingSaree = route?.params?.saree;
@@ -19,6 +36,7 @@ export default function AddEditSareeScreen({ navigation, route }) {
   const [images, setImages] = useState([]);
   const [generatedImage, setGeneratedImage] = useState(null);
   const [generatedImageIsNew, setGeneratedImageIsNew] = useState(false);
+  const [showGeneratedPreview, setShowGeneratedPreview] = useState(false);
   const [generatingImage, setGeneratingImage] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -48,7 +66,7 @@ export default function AddEditSareeScreen({ navigation, route }) {
     if (editingSaree.images?.[0]) {
       setGeneratedImage({
         publicId: editingSaree.images[0],
-        imageUrl: editingSaree.coverImage?.list || null,
+        imageUrl: getGeneratedImageUrl(editingSaree),
       });
       setGeneratedImageIsNew(false);
     }
@@ -86,12 +104,13 @@ export default function AddEditSareeScreen({ navigation, route }) {
       if (form.aiPrompt?.trim()) formData.append('aiPrompt', form.aiPrompt.trim());
       if (generatedImage?.publicId) formData.append('previousGeneratedImagePublicId', generatedImage.publicId);
       images.forEach((img, i) => {
-        formData.append('references', { uri: img.uri, name: `reference_${i}.jpg`, type: 'image/jpeg' });
+        formData.append('references', getImageUploadPart(img, i));
       });
 
       const { data } = await generateSareeImage(formData);
       setGeneratedImage({ publicId: data.publicId, imageUrl: data.imageUrl });
       setGeneratedImageIsNew(true);
+      setShowGeneratedPreview(true);
     } catch (err) {
       setError(err.response?.data?.error || err.message || 'Failed to generate AI image');
     }
@@ -187,7 +206,18 @@ export default function AddEditSareeScreen({ navigation, route }) {
             {generatedImage?.imageUrl ? (
               <View style={styles.generatedWrap}>
                 <Text style={styles.generatedLabel}>Generated Image (saved to Cloudinary)</Text>
-                <Image source={{ uri: generatedImage.imageUrl }} style={styles.generatedImage} />
+                <TouchableOpacity
+                  style={styles.generatedPreviewButton}
+                  onPress={() => setShowGeneratedPreview(true)}
+                  activeOpacity={0.86}
+                >
+                  <Image source={{ uri: generatedImage.imageUrl }} style={styles.generatedImage} resizeMode="contain" />
+                  <View style={styles.zoomOverlay}>
+                    <Ionicons name="expand-outline" size={16} color={colors.white} />
+                    <Text style={styles.zoomOverlayText}>Open full screen</Text>
+                  </View>
+                </TouchableOpacity>
+                <Text style={styles.previewHint}>Tap image to zoom and inspect details</Text>
               </View>
             ) : generatedImage?.publicId ? (
               <View style={styles.generatedWrap}>
@@ -372,6 +402,13 @@ export default function AddEditSareeScreen({ navigation, route }) {
           </View>
         </View>
       </Modal>
+
+      <ZoomableImageModal
+        visible={showGeneratedPreview && !!generatedImage?.imageUrl}
+        imageUri={generatedImage?.imageUrl}
+        title="Generated Image"
+        onClose={() => setShowGeneratedPreview(false)}
+      />
     </View>
   );
 }
@@ -415,7 +452,29 @@ const styles = StyleSheet.create({
   removeImg: { position: 'absolute', top: 2, right: 2 },
   generatedWrap: { marginTop: 12 },
   generatedLabel: { color: colors.textSecondary, fontSize: 12, fontWeight: '600', marginBottom: 8 },
-  generatedImage: { width: '100%', height: 240, borderRadius: borderRadius.md, borderWidth: 1, borderColor: colors.border },
+  generatedPreviewButton: {
+    height: 300,
+    borderRadius: borderRadius.md,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surfaceLight,
+  },
+  generatedImage: { width: '100%', height: '100%' },
+  zoomOverlay: {
+    position: 'absolute',
+    right: 10,
+    bottom: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 7,
+    borderRadius: borderRadius.round,
+    backgroundColor: 'rgba(0,0,0,0.58)',
+  },
+  zoomOverlayText: { color: colors.white, fontSize: 12, fontWeight: '700' },
+  previewHint: { color: colors.textMuted, fontSize: 11, marginTop: 7 },
 
   // Category picker
   fieldLabel: { color: colors.textSecondary, fontSize: 12, fontWeight: '600', letterSpacing: 1, textTransform: 'uppercase', marginBottom: 6 },
